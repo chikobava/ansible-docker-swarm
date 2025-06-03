@@ -1,0 +1,24 @@
+all:
+  vars:
+    # Disable strict host key checking for convenience in local/dev environment
+    # WARNING: Do NOT use this setting in production environments!
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    ansible_user: admin
+    ansible_python_interpreter: /usr/bin/python3
+
+  children:
+    swarm_managers:
+      hosts:
+        192.168.163.132:
+    swarm_workers:
+      hosts:
+        192.168.163.133:
+        192.168.163.134:
+    nfs_servers:
+      hosts:
+        192.168.163.136:
+    nfs_clients:
+      hosts:
+        192.168.163.132:
+        192.168.163.133:
+        192.168.163.134:

@@ -1,0 +1,36 @@
+---
+- name: Setup NFS Server
+  hosts: nfs_servers
+  become: true
+  roles:
+    - nfs_server
+
+- name: Prepare swarm manager nodes
+  hosts: swarm_managers
+  become: true
+  roles:
+    - nfs_client
+    - nfs_autofs
+    - swarm_common
+
+- name: Prepare swarm worker nodes
+  hosts: swarm_workers
+  become: true
+  roles:
+    - nfs_client
+    - nfs_autofs
+    - swarm_common
+
+- name: Add swarm manager nodes
+  hosts: swarm_managers
+  become: true
+  tasks:
+    - name: Initialize the cluster or update cluster coniguration
+      ansible.builtin.include_tasks: playbooks/swarm/tasks/swarm_managers.yml
+
+- name: Add swarm worker nodes
+  hosts: swarm_workers
+  become: true
+  tasks:
+    - name: Add swarn workers or update swarm worker configuration
+      ansible.builtin.include_tasks: playbooks/swarm/tasks/swarm_workers.yml

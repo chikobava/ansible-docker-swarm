@@ -1,0 +1,50 @@
+- name: Get current node info
+  community.docker.docker_swarm_info:
+  register: node_info
+  ignore_errors: true
+
+- name: Set swarm_initialized fact
+  ansible.builtin.set_fact:
+    swarm_initialized: "{{ not node_info.failed | default(true) }}"
+  run_once: true
+
+- name: Initialize Swarm on the first manager node
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: "{{ ansible_default_ipv4.address }}"
+  when: not swarm_initialized
+  register: result
+  run_once: true
+
+- name: Set manager and worker tokens
+  ansible.builtin.set_fact:
+    manager_token: "{{ result.swarm_facts.JoinTokens.Manager if result is defined else node_info.swarm_facts.JoinTokens.Manager }}"
+    worker_token: "{{ result.swarm_facts.JoinTokens.Worker if result is defined else node_info.swarm_facts.JoinTokens.Worker }}"
+    swarm_manager_ip: "{{ ansible_default_ipv4.address }}"
+  when: result is defined or node_info.swarm_facts is defined
+  run_once: true
+
+- name: Join this node to the swarm
+  community.docker.docker_swarm:
+    state: join
+    advertise_addr: "{{ ansible_default_ipv4.address }}"
+    join_token: "{{ hostvars[groups['swarm_managers'][0]].manager_token }}"
+    remote_addrs:
+      - "{{ hostvars[groups['swarm_managers'][0]].swarm_manager_ip }}"
+  when: node_info.failed | default(true)
+
+- name: Promote node to manager if needed
+  community.docker.docker_node:
+    hostname: "{{ ansible_hostname }}"
+    role: manager
+    availability: active
+  when:
+    - not node_info.failed | default(true)
+    - node_info.node_manager is defined and not node_info.node_manager
+
+- name: Enable docker swarm in firewall-cmd
+  ansible.posix.firewalld:
+    service: "docker-swarm"
+    state: enabled
+    permanent: true
+    immediate: true

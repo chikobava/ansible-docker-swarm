@@ -1,0 +1,16 @@
+- name: Install NFS client packages
+  ansible.builtin.dnf:
+    name: nfs-utils
+    state: present
+
+- name: Enable and start rpcbind service
+  ansible.builtin.systemd:
+    name: rpcbind
+    state: started
+    enabled: true
+
+- name: Enable and start NFS client service
+  ansible.builtin.systemd:
+    name: nfs-client.target
+    state: started
+    enabled: true

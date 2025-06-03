@@ -1,0 +1,10 @@
+nfs_autofs_local:
+  auto_master_path: "/mnt/nfs"
+  entries:
+    - name: "docker"
+      owner: "admin"
+      group: "admin"
+      mode: "0755"
+      remote_path: "/srv/nfs/docker"
+nfs_autofs_remote_server: 192.168.163.136
+nfs_autofs_remote_mount_folder: "/srv/nfs/docker"

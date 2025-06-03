@@ -1,0 +1,16 @@
+{
+  "name": "ansible-dev",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "remoteUser": "ansible",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "runArgs": ["-h", "ansible-dev"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.ansible"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+nfs_exports:
+  - path: "/srv/nfs/docker"
+    clients:
+      - "192.168.163.0/24(rw,sync,no_root_squash)"
+    owner: "admin"
+    group: "admin"
+    mode: "0755"

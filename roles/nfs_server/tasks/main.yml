@@ -1,19 +1,22 @@
 - name: Ensure NFS packages are installed
+  become: true
   ansible.builtin.dnf:
     name:
       - nfs-utils
     state: present
 
 - name: Ensure NFS directories exist
+  become: true
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
     owner: "{{ item.owner | default('root') }}"
     group: "{{ item.group | default('root') }}"
     mode: "{{ item.mode | default('0755') }}"
-  loop: "{{ nfs_exports }}"
+  loop: "{{ nfs_server_nfs_exports }}"
 
 - name: Configure /etc/exports
+  become: true
   ansible.builtin.template:
     src: exports.j2
     dest: /etc/exports
@@ -23,6 +26,7 @@
   notify: reload nfs exports
 
 - name: Enable and start NFS services
+  become: true
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: true
@@ -32,6 +36,7 @@
     - rpcbind
 
 - name: Open NFS-related services in firewalld
+  become: true
   ansible.posix.firewalld:
     service: "{{ item }}"
     permanent: true

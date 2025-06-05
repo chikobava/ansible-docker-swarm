@@ -1,4 +1,4 @@
-nfs_exports:
+nfs_server_nfs_exports:
   - path: "/srv/nfs/docker"
     clients:
       - "192.168.163.0/24(rw,sync,no_root_squash)"

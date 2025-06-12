@@ -42,3 +42,10 @@
     name: docker
     state: started
     enabled: true
+
+- name: Permit traffic in default zone for swarm
+  ansible.posix.firewalld:
+    service: docker-swarm
+    state: enabled
+    permanent: true
+    immediate: true

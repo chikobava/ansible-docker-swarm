@@ -19,13 +19,12 @@ services:
       - esnet
     command: >
       bash -c '
-        if [ x${ELASTIC_PASSWORD} == x ]; then
-          echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
-          exit 1;
-        elif [ x${KIBANA_PASSWORD} == x ]; then
-          echo "Set the KIBANA_PASSWORD environment variable in the .env file";
-          exit 1;
-        fi;
+        for var in ELASTIC_PASSWORD KIBANA_PASSWORD HEALTH_CHECK_PASSWORD; do
+        if [ "x${!var}" == "x" ]; then
+          echo "Set the $var environment variable in the .env file"
+          exit 1
+        fi
+        done;
         if [ ! -f config/certs/ca.zip ]; then
           echo "Creating CA";
           bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
@@ -33,27 +32,27 @@ services:
         fi;
         if [ ! -f config/certs/certs.zip ]; then
           echo "Creating certs";
-          echo -ne \
-          "instances:\n"\
-          "  - name: es01\n"\
-          "    dns:\n"\
-          "      - es01\n"\
-          "      - localhost\n"\
-          "    ip:\n"\
-          "      - 127.0.0.1\n"\
-          "  - name: es02\n"\
-          "    dns:\n"\
-          "      - es02\n"\
-          "      - localhost\n"\
-          "    ip:\n"\
-          "      - 127.0.0.1\n"\
-          "  - name: es03\n"\
-          "    dns:\n"\
-          "      - es03\n"\
-          "      - localhost\n"\
-          "    ip:\n"\
-          "      - 127.0.0.1\n"\
-          > config/certs/instances.yml;
+          cat > config/certs/instances.yml <<EOF
+          instances:
+            - name: es01
+              dns:
+                - es01
+                - localhost
+              ip:
+                - 127.0.0.1
+            - name: es02
+              dns:
+                - es02
+                - localhost
+              ip:
+                - 127.0.0.1
+            - name: es03
+              dns:
+                - es03
+                - localhost
+              ip:
+                - 127.0.0.1
+          EOF
           bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
           unzip config/certs/certs.zip -d config/certs;
         fi;
@@ -231,7 +230,6 @@ services:
       - 9200:9200
     networks:
       - esnet
-
 networks:
   esnet:
     driver: overlay

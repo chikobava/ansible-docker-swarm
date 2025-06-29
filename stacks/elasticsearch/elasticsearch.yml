@@ -2,7 +2,11 @@ version: "3.7"
 
 services:
   setup:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    build:
+      context: setup/
+      dockerfile: Dockerfile
+      args:
+        - STACK_VERSION=${STACK_VERSION}
     volumes:
       - /mnt/nfs/docker/volumes/escerts:/usr/share/elasticsearch/config/certs
     user: "0"
@@ -17,59 +21,6 @@ services:
         condition: none
     networks:
       - esnet
-    command: >
-      bash -c '
-        for var in ELASTIC_PASSWORD KIBANA_PASSWORD HEALTH_CHECK_PASSWORD; do
-        if [ "x${!var}" == "x" ]; then
-          echo "Set the $var environment variable in the .env file"
-          exit 1
-        fi
-        done;
-        if [ ! -f config/certs/ca.zip ]; then
-          echo "Creating CA";
-          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
-          unzip config/certs/ca.zip -d config/certs;
-        fi;
-        if [ ! -f config/certs/certs.zip ]; then
-          echo "Creating certs";
-          cat > config/certs/instances.yml <<EOF
-          instances:
-            - name: es01
-              dns:
-                - es01
-                - localhost
-              ip:
-                - 127.0.0.1
-            - name: es02
-              dns:
-                - es02
-                - localhost
-              ip:
-                - 127.0.0.1
-            - name: es03
-              dns:
-                - es03
-                - localhost
-              ip:
-                - 127.0.0.1
-          EOF
-          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
-          unzip config/certs/certs.zip -d config/certs;
-        fi;
-        echo "Setting file permissions"
-        chown -R root:root config/certs;
-        find . -type d -exec chmod 750 \{\} \;;
-        find . -type f -exec chmod 640 \{\} \;;
-        echo "Waiting for Elasticsearch availability";
-        until curl -s --cacert config/certs/ca/ca.crt https://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
-        echo "Creating health_check_role";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://es01:9200/_security/role/health_check_role -d "{\"cluster\":[\"monitor\"],\"indices\":[{\"names\":[\"*\"],\"privileges\":[\"monitor\"]}]}" | grep -q "{\"role\":{\"created\":true}}"; do sleep 10; done;
-        echo "Creating health_check_user";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://es01:9200/_security/user/health_check_user -d "{\"password\":\"${HEALTH_CHECK_PASSWORD}\",\"roles\":[\"health_check_role\"],\"full_name\":\"Health Check User\",\"email\":\"health_check_user@example.com\"}" | grep -q "{\"created\":true}"; do sleep 10; done;
-        echo "Setting kibana_system password";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
-        echo "All done!";
-      '
   es01:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     volumes:

@@ -2,13 +2,16 @@ version: "3.7"
 
 services:
   setup:
-    build:
-      context: setup/
-      dockerfile: Dockerfile
-      args:
-        - STACK_VERSION=${STACK_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    entrypoint: /usr/share/elasticsearch/entrypoint.sh
     volumes:
+      - /mnt/nfs/docker/volumes/setup/entrypoint.sh:/usr/share/elasticsearch/entrypoint.sh:ro
       - /mnt/nfs/docker/volumes/escerts:/usr/share/elasticsearch/config/certs
+      - /mnt/nfs/docker/volumes/elastic_stack_haproxy:/haproxy
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      HEALTH_CHECK_PASSWORD: ${HEALTH_CHECK_PASSWORD}
+      KIBANA_PASSWORD: ${KIBANA_PASSWORD} 
     user: "0"
     healthcheck:
       test: "[ -f config/certs/es01/es01.crt ]"
@@ -116,7 +119,6 @@ services:
       cluster.initial_master_nodes: es01,es02,es03
       discovery.seed_hosts: es01,es02
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "true"
@@ -153,6 +155,7 @@ services:
     volumes:
       - /mnt/nfs/docker/volumes/escerts:/usr/share/kibana/config/certs
       - /mnt/nfs/docker/volumes/kibanadata:/usr/share/kibana/data
+      - /mnt/nfs/docker/volumes/kibanaconfig/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - ${KIBANA_PORT}:5601
     environment:
@@ -174,9 +177,14 @@ services:
       - esnet
 
   haproxy:
-    image: haproxy:latest
+    image: haproxytech/haproxy-debian:3.3
+    user: haproxy
+    working_dir: /home/haproxy
     volumes:
-      - /mnt/nfs/docker/volumes/elastic_stack_haproxy:/usr/local/etc/haproxy
+      - /mnt/nfs/docker/volumes/elastic_stack_haproxy:/home/haproxy
+    entrypoint: /home/haproxy/entrypoint.sh
+    environment:
+      HEALTH_CHECK_PASSWORD: ${HEALTH_CHECK_PASSWORD}
     ports:
       - 9200:9200
     networks:

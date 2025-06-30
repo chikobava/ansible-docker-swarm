@@ -5,11 +5,11 @@ FROM docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
 WORKDIR /usr/share/elasticsearch
 
 # Copy the initialization script
-COPY init.sh /usr/share/elasticsearch/init.sh
+COPY entrypoint.sh /usr/share/elasticsearch/entrypoint.sh
 
 # Verify script exists and set execute permissions
-RUN test -f /usr/share/elasticsearch/init.sh || (echo "Error: init.sh not found" && exit 1) \
-    && chmod +x /usr/share/elasticsearch/init.sh
+RUN test -f /usr/share/elasticsearch/entrypoint.sh || (echo "Error: entrypoint.sh not found" && exit 1) \
+    && chmod +x /usr/share/elasticsearch/entrypoint.sh
 
 # Set the entrypoint to the initialization script
-ENTRYPOINT ["/usr/share/elasticsearch/init.sh"]
+ENTRYPOINT ["/usr/share/elasticsearch/entrypoint.sh"]
